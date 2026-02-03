@@ -1,6 +1,6 @@
 <?php
 
-class Bitrix
+class Bitrix24
 {
     /**
      * @var int
@@ -23,7 +23,7 @@ class Bitrix
      * @param int $id
      * @param string $hash
      */
-    private function __construct($domain, $id, $hash)
+    public function __construct($domain, $id, $hash)
     {
         $this->domain = $domain;
         $this->id = $id;

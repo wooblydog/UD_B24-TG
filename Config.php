@@ -6,7 +6,10 @@ class Config
 
     ];
 
-    public const B24_WEBHOOK_URL = 'https://your-bitrix24-domain/rest/1/webhook/';
+    public const B24_DOMAIN = "https://b24-wwasx2.bitrix24.ru/rest/1/qse4csz4cy2awwdz/";
+    public const B24_ID = "https://b24-wwasx2.bitrix24.ru/rest/1/qse4csz4cy2awwdz/";
+    public const B24_HASH = "https://b24-wwasx2.bitrix24.ru/rest/1/qse4csz4cy2awwdz/";
+    public const TELEGRAN_URL = "https://api.telegram.org/bot5678615483:AAF2V925GQpoHhLfTVzApqgcYb4PDlppsk4/sendmessage?chat_id=-889273408&text=";
 
     public static function getTgChatConfig(): array
     {
@@ -48,10 +51,4 @@ class Config
         }
         return null;
     }
-
-    // Другие конфиги для B24 (методы, поля и т.д.)
-    public const B24_LEAD_FIELDS = [
-        'TITLE' => 'Заявка с сайта',
-        // ... другие поля
-    ];
 }

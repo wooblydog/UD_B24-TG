@@ -2,38 +2,76 @@
 
 declare(strict_types=1);
 
-class TelegramSender
+readonly class TelegramSender
 {
-    private readonly string $botToken;
+    private string $botToken;
 
     public function __construct(string $botToken)
     {
         $this->botToken = $botToken;
     }
 
-    public function sendMessage(string $chatId, array $data): bool
+    public function sendMessage(array $data, string $chatId): bool
     {
-        // Формируем текст сообщения из $data (имя, телефон, etc.)
         $message = $this->formatMessage($data);
 
-        // Формируем URL для TG API
-        $url = "https://api.telegram.org/bot{$this->botToken}/sendMessage?chat_id={$chatId}&text=" . urlencode($message) . "&parse_mode=HTML";
-
-        // Отправка (используем curl или file_get_contents)
-        $response = file_get_contents($url); // Или curl для продакшена
-        $result = json_decode($response, true);
+        $params = [
+            "chat_id" => $chatId,
+            "text" => $message,
+            "parse_mode" => "HTML",
+        ];
+        $ch = curl_init("https://api.telegram.org/bot{$this->botToken}/sendMessage");
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $params,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+        ]);
+        $result = json_decode(curl_exec($ch), true);
+        curl_close($ch);
 
         if ($result['ok'] ?? false) {
             return true;
         }
 
-        error_log("TG send error: " . ($result['description'] ?? 'Unknown'));
+        Utils::error("Ошибка отправки в телеграмм: " . ($result['description'] ?? 'Неизвестная ошибка'));
         return false;
     }
 
     private function formatMessage(array $data): string
     {
-        // Пример форматирования: <b>Заявка</b>\nИмя: {$data['name']}\n...
-        return 'Formatted message here'; // Реализуй по своим полям
+        $quiz = $this->checkQuiz($data);
+
+        $title = $quiz ? "🎯 Заявка на квиз" : "Новая заявка! 🔥";
+        $name = $data['name'] ?? "Не указано";
+
+        $message = "<b>{$title}</b>\n\n" .
+            "🌐  <b>Сайт</b>: {$data['url']}\n" .
+            "📞  <b>Контакты</b>: {$data['phone']} / {$name}\n\n";
+
+        if ($quiz) {
+            $message .= "<b>❓ Квиз:</b>\n";
+            foreach ($quiz as $question => $answer) {
+                $message .= str_replace("_", " ", $question) . "?\n └ <b>{$answer}</b>\n\n";
+            }
+        }
+        $message .= "<b>🔖 UTM-метки:</b>\n" .
+            "├ Source: <b>{$data['utm_source']}</b>\n" .
+            "├ Medium: <b>{$data['utm_medium']}</b>\n" .
+            "├ Campaign: <b>{$data['utm_campaign']}</b>\n" .
+            "└ Content: <b>{$data['utm_content']}</b>\n\n" .
+            "📝 <b>Форма</b>: {$data['formid']}\n" .
+            "📎 <b>Транзакция</b>: {$data['tranid']}";
+
+        return $message;
     }
+
+    private function checkQuiz(array $data): ?array
+    {
+        return array_filter($data, function ($key) {
+            return preg_match('/^[А-Яа-яЁё_]+$/u', $key);
+        }, ARRAY_FILTER_USE_KEY) ?? null;
+    }
+
+
 }

@@ -7,8 +7,15 @@ class Utils
     {
         $json = json_encode($vars, JSON_UNESCAPED_UNICODE | ($pretty ? JSON_PRETTY_PRINT : 0));
 
-        $logDirectory = __DIR__ . '/logs';
-        $logFile = $message == "INFO" ? $logDirectory . '/log.log' : $logDirectory . '/error.log';
+        $logDirectory = __DIR__ . '/logs/';
+        $logFile = $logDirectory .
+            ($message == "INFO" ?
+                'log.log' :
+                ($message == 'NOTE'
+                    ? 'contactData.log'
+                    : 'error.log'
+                )
+            );
 
         if (!is_dir($logDirectory)) {
             mkdir($logDirectory, 0755, true);
@@ -26,6 +33,7 @@ class Utils
     public static function error(...$vars): void
     {
         self::write("ERROR", false, ...$vars);
+        self::dump($vars);
     }
 
     public static function info(...$vars): void
@@ -33,9 +41,9 @@ class Utils
         self::write("INFO", false, ...$vars);
     }
 
-    public static function debug(...$vars): void
+    public static function note(...$vars): void
     {
-        self::write("DEBUG", false, ...$vars);
+        self::write("NOTE", false, ...$vars);
     }
 
 
@@ -61,12 +69,12 @@ class Utils
 
     public static function dd(...$vars)
     {
-        self::pageDebug(true, $vars);
+        self::pageDebug(true, ...$vars);
     }
 
     public static function dump(...$vars)
     {
-        self::pageDebug(false, $vars);
+        self::pageDebug(false, ...$vars);
     }
 
 }

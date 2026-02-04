@@ -37,23 +37,23 @@ function dump(...$vars): void
     }
 }
 
-function dd(...$vars): void
-{
-    echo '<style> 
-            .dd { 
-                background-color: #000000; color:#23ff00; 
-                border: 1px solid #000000; padding: 10px; 
-                margin: 10px; border-radius: 5px; 
-                margin-bottom: 50px; 
-            }
-            </style>';
-    foreach ($vars as $var) {
-        echo '<div class="dd"><pre>';
-        var_export($var);
-        echo '</pre></div>';
-    }
-    die();
-}
+//function dd(...$vars): void
+//{
+//    echo '<style>
+//            .dd {
+//                background-color: #000000; color:#23ff00;
+//                border: 1px solid #000000; padding: 10px;
+//                margin: 10px; border-radius: 5px;
+//                margin-bottom: 50px;
+//            }
+//            </style>';
+//    foreach ($vars as $var) {
+//        echo '<div class="dd"><pre>';
+//        var_export($var);
+//        echo '</pre></div>';
+//    }
+//    die();
+//}
 
 function tgDebug($pretty = true, ...$vars)
 {

@@ -66,7 +66,7 @@ class Config
         } elseif ($city === 66) {
             return ($source === 'yandex_k') ? '-925455936' : '-1001956618159';
         }
-        return null; //МБ добавить потом дефолтный чат для ошибок
+        return null; //TODO: МБ добавить потом дефолтный чат для ошибок
     }
 
     public static function getTgChatIdAndToken(string $url, string $utmSource, int $city): array

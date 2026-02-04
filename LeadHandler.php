@@ -34,6 +34,7 @@ class LeadHandler
             Utils::error('ID чата не найден');
             return;
         }
+        //TODO: Сверка контактов и отправка в битрикс
 //        $contact = $this->bitrix->checkContact($request['phone']);
 //
 //        if ($contact) {

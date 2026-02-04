@@ -38,6 +38,7 @@ readonly class TelegramSender
         return false;
     }
 
+    //TODO: проверка на то что юзер уже обращался и отображение
     private function formatMessage(array $data): string
     {
         $quiz = $this->checkQuiz($data);

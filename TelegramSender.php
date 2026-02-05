@@ -30,15 +30,20 @@ readonly class TelegramSender
         $result = json_decode(curl_exec($ch), true);
         curl_close($ch);
 
+        // TEST
+        if (Config::IS_DEV) {
+            Utils::test("Проверка отправки в телеграмм", $message, $result['ok']);
+        }
+        //
+
         if ($result['ok'] ?? false) {
             return true;
         }
 
-        Utils::error("Ошибка отправки в телеграмм: " . ($result['description'] ?? 'Неизвестная ошибка'));
         return false;
     }
 
-    //TODO: проверка на то что юзер уже обращался и отображение
+    //TODO: проверка на то что юзер уже обращался и отображение?
     private function formatMessage(array $data): string
     {
         $quiz = $this->checkQuiz($data);
@@ -67,6 +72,12 @@ readonly class TelegramSender
         return $message;
     }
 
+    /**
+     * Проверяет, содержит ли заявка вопросы квиза (по ключам на кириллице)
+     *
+     * @param array $data Данные заявки
+     * @return array|null Ассоциативный массив вопросов-ответов или null
+     */
     private function checkQuiz(array $data): ?array
     {
         return array_filter($data, function ($key) {

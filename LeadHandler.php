@@ -9,49 +9,113 @@ class LeadHandler
         $this->bitrix = $bitrix;
     }
 
+    /**
+     * Основной обработчик входящего запроса от Tilda.
+     * Извлекает данные, отправляет в Telegram и создаёт лид в Bitrix24
+     *
+     * @return void
+     */
     public function handleRequest(): void
     {
-        $request = $this->extractRequestData();
+        $request = Utils::extractRequestData();
 
         if (empty($request) || empty($request["phone"])) {
-            Utils::error("Невалидный запрос");
+            Utils::error([
+                "cause" => "Невалидный запрос",
+                "phone" => $request["phone"],
+                "requestEmpty" => empty($request),
+            ]);
             return;
         }
 
         Utils::info($_POST, $_GET);
-        Utils::note(
-            $request['name'] ?? 'Не указано',
-            $request['phone'] ?? 'Не указано',
-            $request['utm_source'] ?? 'Не указано'
-        );
+        Utils::note([
+            "name" => $request["name"] ?? "Не указано",
+            "phone" => $request["phone"],
+            "request" => $request["utm_source"] ?? "Не указано"
+        ]);
 
-        [$chatId, $token] = $this->determineTgChatId(
-            $request['url'] ?? '',
-            $request['utm_source'] ?? '',
-            (int)($request['city'] ?? 0));
+        [$chatId, $botToken] = Config::getTgChatIdAndToken(
+            $request["url"] ?? "",
+            $request["utm_source"] ?? "",
+            (int)($request["city"] ?? 0));
 
         if (!$chatId) {
-            Utils::error('ID чата не найден');
+            Utils::error([
+                "cause" => "ID чата не найден",
+                "url" => $request["url"] ?? "",
+                "city" => $request["city"] ?? "",]);
             return;
         }
-        //TODO: Сверка контактов и отправка в битрикс
-//        $contact = $this->bitrix->checkContact($request['phone']);
-//
-//        if ($contact) {
-//            $request['contact_id'] = $contact['ID'];
-//        }
-//        ((new TelegramSender($token))->sendMessage($request,$chatId ));
-        ((new TelegramSender("7055483414:AAE6Ck2F8fRBZ0baNEXuhg677fjwlY0S7ME"))->sendMessage($request,"-1002115190876" ));
-//        $this->bitrix->createLead($request);
+
+
+        $TgSender = new TelegramSender($botToken);
+        $TgSender = $TgSender->sendMessage($request,$chatId);
+
+        if (!$TgSender) {
+            Utils::error([
+                "cause" => "Ошибка отправки в телеграмм: ",
+                "error" => ($result['description'] ?? 'Неизвестная ошибка')
+            ]);
+        }
+
+        $fields = $this->prepareLeadFields($request);
+        $res = $this->bitrix->addLead($fields);
+
+        if ($res->error) {
+            Utils::error([
+                "cause" => "Не удалось отправить лид в Битрикс24",
+                "phone" => $request["phone"],
+                "error" => $res->error,
+                "description" => $res->error_description ?? ""
+            ]);
+        }
+
+        // TEST
+        if (Config::IS_DEV) {
+            Utils::test("Проверка получение данных реквеста", $request);
+            Utils::test("Проверка получения чата и токена", $chatId, $botToken);
+        }
+        //
     }
 
-    private function extractRequestData(): array
+    /**
+     * Подготавливает поля для создания лида в Bitrix24
+     *
+     * @param array $request
+     * @return array
+     */
+    private function prepareLeadFields(array $request): array
     {
-        return array_merge(array_change_key_case($_POST ?? null), array_change_key_case($_GET ?? null));
+        $phone = Utils::normalizePhone($request["phone"] ?? "");
+        $email = trim($request["email"] ?? "");
+        $cityId = Utils::getCityId($request);
+
+        $fields = [
+            "TITLE" => "Заявка с сайта " . Utils::normalizeUrl($request["url"]),
+            "NAME" => trim($request["name"] ?? "Без имени"),
+            "STATUS_ID" => "NEW",
+            "OPENED" => "Y",
+            "ASSIGNED_BY_ID" => Config::B24_RESPONIBLE_ID,
+            "PHONE" => [["VALUE" => $phone, "VALUE_TYPE" => "WORK"]],
+            "EMAIL" => filter_var($email, FILTER_VALIDATE_EMAIL)
+                ? [["VALUE" => $email, "VALUE_TYPE" => "WORK"]]
+                : [],
+            'POST' => $request['job'] ?? null,
+        ];
+
+        $customFields = [
+            "UF_CRM_1698302617" => Utils::normalizeUrl($request["url"] ?? ""),
+        ];
+
+        if (!empty($request["city"])) {
+            $customFields["UF_CRM_1635751283979"] = $cityId;
+        }
+
+        $utmFields = Utils::extractRequestUtm($request) ?? [];
+        $customFields = array_merge($customFields, $utmFields);
+
+        return array_merge($fields, $customFields);
     }
 
-    private function determineTgChatId(string $url, string $utmSource, int $city): array
-    {
-        return Config::getTgChatIdAndToken($url, $utmSource, $city);
-    }
 }

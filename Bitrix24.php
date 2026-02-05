@@ -116,27 +116,16 @@ class Bitrix24
      * @param string $email
      * @param array $customFields
      * @param string $comment
-     * @return int
+     * @return mixed
      */
-    public function addLead($responsibleId, $title, $name, $phone, $email, $customFields = null, $comment = null)
+    public function addLead($fields)
     {
-        $phone = self::clearPhone($phone);
         $method = 'crm.lead.add';
         $lead = [
-            'fields' => [
-                'TITLE' => $title,
-                'NAME' => $name,
-                'STATUS_ID' => 'NEW',
-                'OPENED' => 'Y',
-                'ASSIGNED_BY_ID' => $responsibleId,
-                'COMMENTS' => $comment,
-                'PHONE' => [['VALUE' => $phone]],
-                'EMAIL' => [['VALUE' => $email]],
-            ],
-            'params' => ['REGISTER_SONET_EVENT' => 'Y']
+            'fields' => $fields,
+            'params' => ['REGISTER_SONET_EVENT' => 'N']
         ];
-        if (is_array($customFields))
-            $lead['fields'] = array_merge($lead['fields'], $customFields);
+
         $res = $this->cUrl($method, http_build_query($lead));
         return $res->result;
     }
@@ -488,8 +477,8 @@ class Bitrix24
         ));
         $res = $this->cUrl($method, $queryData);
         return $res->result;
-    }    
-    
+    }
+
     public function getCatalogProductList($start)
     {
         $method = "catalog.product.list";
@@ -501,7 +490,7 @@ class Bitrix24
         $res = $this->cUrl($method, $queryData);
         return $res->result;
     }
-    
+
     public function getCatalogs()
     {
         $method = "catalog.catalog.list";
